@@ -26,12 +26,15 @@ import { AppService } from './app.service';
           shield({ mode: 'LIVE' }),
           detectBot({
             mode: 'LIVE',
-            allow: ['CATEGORY:SEARCH_ENGINE'],
+            allow: [
+              'CATEGORY:SEARCH_ENGINE',
+              'CURL', // Allow curl specifically while keeping detectBot in LIVE mode
+            ],
           }),
           fixedWindow({
             mode: 'LIVE',
             window: '60s',
-            max: 2,
+            max: 60, // Allow up to 60 requests per minute
           }),
         ],
       }),
