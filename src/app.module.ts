@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { BullModule } from '@nestjs/bullmq';
 import {
   ArcjetGuard,
   ArcjetModule,
@@ -10,34 +11,54 @@ import {
 } from '@arcjet/nest';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { SampleQueueModule } from './queue/sample-queue.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+          password:
+            configService.get<string>('REDIS_PASSWORD', '') || undefined,
+        },
+      }),
+    }),
+    SampleQueueModule,
     ArcjetModule.forRootAsync({
       isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        key: configService.get<string>('ARCJET_KEY', ''),
-        rules: [
-          shield({ mode: 'LIVE' }),
-          detectBot({
-            mode: 'LIVE',
-            allow: [
-              'CATEGORY:SEARCH_ENGINE',
-              'CURL', // Allow curl specifically while keeping detectBot in LIVE mode
-            ],
-          }),
-          fixedWindow({
-            mode: 'LIVE',
-            window: '60s',
-            max: 60, // Allow up to 60 requests per minute
-          }),
-        ],
-      }),
+      useFactory: (configService: ConfigService) => {
+        const mode = configService.get<'LIVE' | 'DRY_RUN'>(
+          'ARCJET_MODE',
+          'DRY_RUN',
+        );
+        return {
+          key: configService.get<string>('ARCJET_KEY', ''),
+          rules: [
+            shield({ mode }),
+            detectBot({
+              mode,
+              allow: [
+                'CATEGORY:SEARCH_ENGINE',
+                'CURL', // Allow curl for API testing
+              ],
+            }),
+            fixedWindow({
+              mode,
+              window: '60s',
+              max: 60,
+            }),
+          ],
+        };
+      },
     }),
   ],
   controllers: [AppController],
@@ -50,3 +71,4 @@ import { AppService } from './app.service';
   ],
 })
 export class AppModule {}
+
