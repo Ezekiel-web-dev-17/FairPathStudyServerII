@@ -14,7 +14,7 @@ export interface IDocumentJobPayload {
   filePath: string;
   mimeType: string;
   documentType: string;
-  studentId: number;
+  studentId: string;
 }
 
 @Processor(DOCUMENT_OCR_QUEUE)
@@ -86,7 +86,7 @@ export class DocumentOcrProcessor extends WorkerHost {
   }
 
   private async updateStudentProfile(
-    studentId: number,
+    studentId: string,
     documentType: string,
     extractedFields: Record<string, any>,
   ) {

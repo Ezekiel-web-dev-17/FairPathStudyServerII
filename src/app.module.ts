@@ -15,6 +15,7 @@ import { SampleQueueModule } from './queue/sample-queue.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { OcrModule } from './ocr/ocr.module';
+import { ScraperModule } from './scraper/scraper.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,8 @@ import { OcrModule } from './ocr/ocr.module';
     }),
     PrismaModule,
     DocumentsModule,
+    OcrModule,
+    ScraperModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -65,8 +68,6 @@ import { OcrModule } from './ocr/ocr.module';
         };
       },
     }),
-    DocumentsModule,
-    OcrModule,
   ],
   controllers: [AppController],
   providers: [

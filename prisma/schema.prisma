@@ -12,7 +12,7 @@ datasource db {
 }
 
 model User {
-  id        Int             @id @default(autoincrement())
+  id        String          @id @default(uuid())
   email     String          @unique
   name      String?
   documents Document[]
@@ -35,7 +35,7 @@ enum ProcessingStatus {
 
 model Document {
   id            String           @id @default(uuid())
-  studentId     Int
+  studentId     String
   student       User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   type          DocumentType     @default(OTHER)
   fileName      String
@@ -52,7 +52,7 @@ model Document {
 
 model StudentProfile {
   id              String   @id @default(uuid())
-  studentId       Int      @unique
+  studentId       String   @unique
   student         User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
   passportDetails Json?
   academicHistory Json?

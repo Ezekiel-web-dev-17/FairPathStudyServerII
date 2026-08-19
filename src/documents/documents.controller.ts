@@ -32,7 +32,7 @@ export class DocumentsController {
       type: 'object',
       properties: {
         file: { type: 'string', format: 'binary' },
-        studentId: { type: 'number', example: 1 },
+        studentId: { type: 'string', example: 'student-101' },
         documentType: {
           type: 'string',
           enum: ['TRANSCRIPT', 'PASSPORT', 'TEST_SCORE', 'OTHER'],
@@ -46,7 +46,7 @@ export class DocumentsController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @UploadedFile() file: Express.Multer.File,
-    @Body('studentId', new DefaultValuePipe(1), ParseIntPipe) studentId: number,
+    @Body('studentId', new DefaultValuePipe('student-101')) studentId: string,
     @Body('documentType') documentType: DocumentType,
   ) {
     Logger.log(`[Upload Request] File: ${file?.originalname || 'None'}, studentId: ${studentId}, type: ${documentType}`);
@@ -73,13 +73,13 @@ export class DocumentsController {
 
   @Get('list/:studentId')
   @ApiOperation({ summary: 'List all uploaded documents for a specific student' })
-  async getStudentDocuments(@Param('studentId', ParseIntPipe) studentId: number) {
+  async getStudentDocuments(@Param('studentId') studentId: string) {
     return this.documentsService.getStudentDocuments(studentId);
   }
 
   @Get('profile/:studentId')
   @ApiOperation({ summary: 'Get consolidated unified JSON profile for a student' })
-  async getStudentProfile(@Param('studentId', ParseIntPipe) studentId: number) {
+  async getStudentProfile(@Param('studentId') studentId: string) {
     return this.documentsService.getStudentUnifiedProfile(studentId);
   }
 }
