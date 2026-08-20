@@ -5,6 +5,7 @@ import * as dns from 'dns';
 import { promisify } from 'util';
 import { URL } from 'url';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AiService, IAiFieldMatch } from '../ai/ai.service.js';
 import type { User, StudentProfile, Document } from '@prisma/client';
 import {
   IExtractedField,
@@ -20,7 +21,10 @@ export class ScraperService {
   private readonly logger = new Logger(ScraperService.name);
   private readonly MAX_REDIRECTS = 5;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiService: AiService,
+  ) {}
 
   /**
    * Safely scrape an application page from a target URL
@@ -315,9 +319,11 @@ export class ScraperService {
     const studentData = this.buildStudentDataStore(student, profile, documents);
 
     // 3. Perform Field Matching and Autofill Mapping
-    const fieldMatches: IAutofillFieldMatch[] = scrapedApp.extractedFields.map((field) => {
-      return this.matchFieldToStudentData(field, studentData);
-    });
+    //    Try AI-powered semantic matching first; fall back to hardcoded rules
+    const fieldMatches = await this.matchFieldsWithAiFallback(
+      scrapedApp.extractedFields,
+      studentData,
+    );
 
     const totalFieldsCount = scrapedApp.extractedFields.length;
     const filledFieldsCount = fieldMatches.filter((m) => m.isFilled).length;
@@ -529,7 +535,59 @@ export class ScraperService {
   }
 
   /**
-   * Match an extracted application field against student data
+   * Try AI-powered field matching first, then fall back to hardcoded rules.
+   * If AI returns results, we merge them with the hardcoded fallback for any
+   * fields the AI didn't match (confidence 0 or missing).
+   */
+  private async matchFieldsWithAiFallback(
+    fields: IExtractedField[],
+    studentData: Record<string, unknown>,
+  ): Promise<IAutofillFieldMatch[]> {
+    // Attempt AI matching
+    let aiMatches: IAiFieldMatch[] | null = null;
+    if (this.aiService.isEnabled) {
+      this.logger.log('Attempting AI-powered field matching...');
+      const fieldSummaries = fields.map((f) => ({
+        id: f.id,
+        name: f.name,
+        label: f.label,
+        type: f.type,
+      }));
+      aiMatches = await this.aiService.matchFieldsToStudentData(fieldSummaries, studentData);
+      if (aiMatches) {
+        this.logger.log(`AI matched ${aiMatches.filter((m) => m.confidence > 0).length}/${fields.length} fields.`);
+      }
+    }
+
+    // Build a lookup map from AI results
+    const aiMatchMap = new Map<string, IAiFieldMatch>();
+    if (aiMatches) {
+      for (const m of aiMatches) {
+        aiMatchMap.set(m.fieldId, m);
+      }
+    }
+
+    // For each field: use AI result if confident, otherwise fall back to hardcoded
+    return fields.map((field) => {
+      const aiResult = aiMatchMap.get(field.id);
+
+      if (aiResult && aiResult.confidence >= 0.7 && aiResult.suggestedValue != null) {
+        return {
+          field,
+          autofilledValue: aiResult.suggestedValue,
+          isFilled: true,
+          source: aiResult.source,
+          confidence: aiResult.confidence,
+        };
+      }
+
+      // Fall back to hardcoded matching
+      return this.matchFieldToStudentData(field, studentData as Record<string, any>);
+    });
+  }
+
+  /**
+   * Hardcoded fallback: match an extracted application field against student data
    */
   private matchFieldToStudentData(field: IExtractedField, data: Record<string, any>): IAutofillFieldMatch {
     const text = `${field.name} ${field.label}`.toLowerCase();
