@@ -206,6 +206,8 @@ export class ScraperService {
         labelText = $el.attr('placeholder') || $el.attr('aria-label') || $el.attr('title') || name;
       }
 
+      const hasAsterisk = labelText.includes('*');
+
       // Clean label text
       labelText = labelText.replace(/\s+/g, ' ').replace(/[*:]/g, '').trim();
       if (!labelText) {
@@ -217,7 +219,7 @@ export class ScraperService {
         $el.attr('required') !== undefined ||
         $el.attr('aria-required') === 'true' ||
         $el.closest('.form-group, .field, div').find('.required, .asterisk, span:contains("*")').length > 0 ||
-        labelText.includes('*');
+        hasAsterisk;
 
       // Map Type
       let fieldType: IExtractedField['type'] = 'text';
