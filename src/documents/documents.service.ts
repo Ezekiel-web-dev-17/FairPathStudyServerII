@@ -30,7 +30,7 @@ export class DocumentsService {
 
   async uploadDocument(
     file: Express.Multer.File,
-    studentId: number,
+    studentId: string,
     documentType: DocumentType,
   ): Promise<IDocumentUploadResult> {
     if (!file) {
@@ -141,14 +141,14 @@ export class DocumentsService {
     };
   }
 
-  async getStudentDocuments(studentId: number) {
+  async getStudentDocuments(studentId: string) {
     return this.prisma.document.findMany({
       where: { studentId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async getStudentUnifiedProfile(studentId: number) {
+  async getStudentUnifiedProfile(studentId: string) {
     const profile = await this.prisma.studentProfile.findUnique({
       where: { studentId },
       include: { student: { select: { id: true, email: true, name: true } } },
@@ -177,7 +177,7 @@ export class DocumentsService {
     }
   }
 
-  private async ensureUserExists(studentId: number) {
+  private async ensureUserExists(studentId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: studentId },
     });

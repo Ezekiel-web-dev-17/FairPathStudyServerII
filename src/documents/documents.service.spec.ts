@@ -60,7 +60,7 @@ describe('DocumentsService', () => {
   });
 
   it('should reject file upload if no file is provided', async () => {
-    await expect(service.uploadDocument(null as any, 1, DocumentType.PASSPORT)).rejects.toThrow(
+    await expect(service.uploadDocument(null as any, 'student-101', DocumentType.PASSPORT)).rejects.toThrow(
       BadRequestException,
     );
   });
@@ -73,7 +73,7 @@ describe('DocumentsService', () => {
       buffer: Buffer.from('MZ...'),
     };
 
-    await expect(service.uploadDocument(mockFile, 1, DocumentType.PASSPORT)).rejects.toThrow(
+    await expect(service.uploadDocument(mockFile, 'student-101', DocumentType.PASSPORT)).rejects.toThrow(
       BadRequestException,
     );
   });
@@ -88,23 +88,23 @@ describe('DocumentsService', () => {
     };
 
     mockS3Service.uploadFile.mockResolvedValue({
-      url: 'https://fairpath-documents.s3.us-east-1.amazonaws.com/documents/1/doc-uuid.pdf',
-      s3Key: 'documents/1/doc-uuid.pdf',
+      url: 'https://fairpath-documents.s3.us-east-1.amazonaws.com/documents/student-101/doc-uuid.pdf',
+      s3Key: 'documents/student-101/doc-uuid.pdf',
       storedLocally: false,
     });
 
-    mockPrisma.user.findUnique.mockResolvedValue({ id: 1, email: 'student_1@fairpath.study' });
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'student-101', email: 'student_1@fairpath.study' });
     mockPrisma.document.create.mockResolvedValue({
       id: 'doc-uuid-123',
-      studentId: 1,
+      studentId: 'student-101',
       type: DocumentType.TRANSCRIPT,
       fileName: 'transcript.pdf',
-      fileUrl: 'https://fairpath-documents.s3.us-east-1.amazonaws.com/documents/1/doc-uuid.pdf',
+      fileUrl: 'https://fairpath-documents.s3.us-east-1.amazonaws.com/documents/student-101/doc-uuid.pdf',
       status: ProcessingStatus.PENDING,
     });
     mockQueue.add.mockResolvedValue({ id: 'job-1' });
 
-    const result = await service.uploadDocument(mockFile, 1, DocumentType.TRANSCRIPT);
+    const result = await service.uploadDocument(mockFile, 'student-101', DocumentType.TRANSCRIPT);
 
     expect(result).toBeDefined();
     expect(result.documentId).toBe('doc-uuid-123');

@@ -11,18 +11,24 @@ import {
 } from '@arcjet/nest';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { SampleQueueModule } from './queue/sample-queue.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { OcrModule } from './ocr/ocr.module';
+import { ScraperModule } from './scraper/scraper.module.js';
+import { AiModule } from './ai/ai.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    AiModule,
     PrismaModule,
     DocumentsModule,
+    OcrModule,
+    ScraperModule,
+    NotificationsModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,7 +41,6 @@ import { OcrModule } from './ocr/ocr.module';
         },
       }),
     }),
-    SampleQueueModule,
     ArcjetModule.forRootAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -65,8 +70,6 @@ import { OcrModule } from './ocr/ocr.module';
         };
       },
     }),
-    DocumentsModule,
-    OcrModule,
   ],
   controllers: [AppController],
   providers: [
