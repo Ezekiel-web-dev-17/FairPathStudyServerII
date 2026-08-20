@@ -1,0 +1,15 @@
+name: Enforce Source Branch
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify branch is build
+        run: |
+          if [ "${{ github.head_ref }}" != "build" ]; then
+            echo "Error: You can only merge into main from the build branch."
+            exit 1
+          fi
