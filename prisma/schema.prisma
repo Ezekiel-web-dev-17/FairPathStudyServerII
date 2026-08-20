@@ -4,8 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,7 +12,53 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        String          @id @default(uuid())
+  email     String          @unique
+  name      String?
+  documents Document[]
+  profile   StudentProfile?
 }
+
+enum DocumentType {
+  TRANSCRIPT
+  PASSPORT
+  TEST_SCORE
+  OTHER
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Document {
+  id            String           @id @default(uuid())
+  studentId     String
+  student       User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type          DocumentType     @default(OTHER)
+  fileName      String
+  fileUrl       String
+  mimeType      String
+  fileSize      Int
+  status        ProcessingStatus @default(PENDING)
+  errorMessage  String?
+  rawOcrText    String?          @db.Text
+  extractedData Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model StudentProfile {
+  id              String   @id @default(uuid())
+  studentId       String   @unique
+  student         User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  passportDetails Json?
+  academicHistory Json?
+  testScores      Json?
+  unifiedProfile  Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
