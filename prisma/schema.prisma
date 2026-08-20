@@ -12,11 +12,28 @@ datasource db {
 }
 
 model User {
-  id        String          @id @default(uuid())
-  email     String          @unique
-  name      String?
-  documents Document[]
-  profile   StudentProfile?
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String?
+  documents     Document[]
+  profile       StudentProfile?
+  notifications Notification[]
+}
+
+enum NotificationType {
+  USER_EMAIL_REQUEST
+  ADMIN_ACTION_REQUIRED
+  SYSTEM_ALERT
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  BOUNCED
+  FAILED
+  RESOLVED
 }
 
 enum DocumentType {
@@ -31,6 +48,20 @@ enum ProcessingStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+model Notification {
+  id        String             @id @default(uuid())
+  recipient String
+  userId    String?
+  user      User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType   @default(USER_EMAIL_REQUEST)
+  status    NotificationStatus @default(PENDING)
+  title     String
+  message   String             @db.Text
+  metadata  Json?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 }
 
 model Document {
@@ -61,4 +92,5 @@ model StudentProfile {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
 
