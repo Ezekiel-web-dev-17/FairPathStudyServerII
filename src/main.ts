@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { VersioningType } from '@nestjs/common';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { ConfigService } from '@nestjs/config';
@@ -10,13 +11,20 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Morgan - HTTP request logger middleware
+  // 1. Global Prefix and API Versioning (/api/v1/...)
+  app.setGlobalPrefix('api');
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
+
+  // 2. Morgan - HTTP request logger middleware
   app.use(morgan('dev'));
 
-  // 2. Helmet - Secure HTTP headers
+  // 3. Helmet - Secure HTTP headers
   app.use(helmet());
 
-  // 3. CORS - Enable Cross-Origin Resource Sharing
+  // 4. CORS - Enable Cross-Origin Resource Sharing
   app.enableCors({
     origin: '*', // Set specific origins in production, e.g., 'https://yourdomain.com'
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -26,7 +34,7 @@ async function bootstrap() {
   // Zod specific patch (uncomment if you are using nestjs-zod)
   // patchNestJsSwagger();
 
-  // 1. Configure the Swagger Document Builder
+  // 5. Configure the Swagger Document Builder
   const config = new DocumentBuilder()
     .setTitle('My Backend API')
     .setDescription('The core API documentation for my application')
@@ -35,13 +43,12 @@ async function bootstrap() {
     // .addBearerAuth() 
     .build();
 
-  // 2. Create the document object
+  // 6. Create the document object
   const document = SwaggerModule.createDocument(app, config);
 
-  // 3. Setup the Swagger UI endpoint
-  // The first argument ('api') is the route path (e.g., localhost:3000/api)
-  SwaggerModule.setup('api', app, document); 
-  // Or, if using Zod: SwaggerModule.setup('api', app, cleanupOpenApiDoc(document));
+  // 7. Setup the Swagger UI endpoint at /api/docs
+  SwaggerModule.setup('api/docs', app, document); 
+  // Or, if using Zod: SwaggerModule.setup('api/docs', app, cleanupOpenApiDoc(document));
 
   // Retrieve ConfigService from Nest app container
   const configService = app.get(ConfigService);
