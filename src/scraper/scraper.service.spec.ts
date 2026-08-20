@@ -2,10 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ScraperService } from './scraper.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AiService } from '../ai/ai.service.js';
 
 describe('ScraperService', () => {
   let service: ScraperService;
   let prismaService: any;
+  let mockAiService: any;
 
   const mockPrismaService = {
     user: {
@@ -20,12 +22,22 @@ describe('ScraperService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
+    mockAiService = {
+      isEnabled: false,
+      matchFieldsToStudentData: jest.fn().mockResolvedValue(null),
+      extractStructuredData: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScraperService,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: AiService,
+          useValue: mockAiService,
         },
       ],
     }).compile();
