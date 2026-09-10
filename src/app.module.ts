@@ -17,6 +17,7 @@ import { OcrModule } from './ocr/ocr.module';
 import { ScraperModule } from './scraper/scraper.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     OcrModule,
     ScraperModule,
     NotificationsModule,
+    UsersModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
