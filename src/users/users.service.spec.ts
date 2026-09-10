@@ -150,12 +150,13 @@ describe('UsersService', () => {
   });
 
   describe('findOne', () => {
-    it('should return a user if found', async () => {
-      const mockUser = { id: 'user-1', name: 'John Doe', email: 'john@example.com' };
+    it('should return a user without password if found', async () => {
+      const mockUser = { id: 'user-1', name: 'John Doe', email: 'john@example.com', password: 'secret-hash' };
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await service.findOne('user-1');
-      expect(result).toBe(mockUser);
+      expect(result.id).toBe('user-1');
+      expect(result).not.toHaveProperty('password');
     });
 
     it('should throw NotFoundException if user not found', async () => {

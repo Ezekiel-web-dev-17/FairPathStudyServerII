@@ -16,6 +16,12 @@ export class UsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private sanitizeUser<T extends Record<string, any>>(user: T): Omit<T, 'password'> {
+    if (!user) return user;
+    const { password: _, ...sanitized } = user;
+    return sanitized;
+  }
+
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 11);
   }
@@ -56,9 +62,7 @@ export class UsersService {
 
     this.logger.log(`Created new user [ID: ${user.id}, Email: ${user.email}]`);
 
-    // Omit sensitive password hash from return payload
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return this.sanitizeUser(user);
   }
 
   async findAll() {
@@ -72,10 +76,10 @@ export class UsersService {
       orderBy: { id: 'asc' },
     });
 
-    return users.map(({ password: _, ...u }) => u);
+    return users.map((u) => this.sanitizeUser(u));
   }
 
-  async findOne(id: string) {
+  private async findUserWithPassword(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
@@ -96,6 +100,11 @@ export class UsersService {
     return user;
   }
 
+  async findOne(id: string) {
+    const user = await this.findUserWithPassword(id);
+    return this.sanitizeUser(user);
+  }
+
   async update(id: string, data: UpdateUserDto) {
     const parseResult = updateUserSchema.safeParse(data);
     if (!parseResult.success) {
@@ -103,7 +112,7 @@ export class UsersService {
       throw new BadRequestException(`Validation failed: ${errorMsg}`);
     }
 
-    await this.findOne(id);
+    await this.findUserWithPassword(id);
 
     if (parseResult.data.email) {
       const existingUser = await this.prisma.user.findUnique({
@@ -119,8 +128,7 @@ export class UsersService {
       data: parseResult.data,
     });
 
-    const { password: _, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    return this.sanitizeUser(updatedUser);
   }
 
   async changePassword(id: string, data: ChangePasswordDto) {
@@ -132,7 +140,7 @@ export class UsersService {
 
     const { currentPassword, newPassword } = parseResult.data;
 
-    const user = await this.findOne(id);
+    const user = await this.findUserWithPassword(id);
 
     if (user.password && !(await this.verifyPassword(currentPassword, user.password))) {
       throw new BadRequestException('Current password provided is incorrect.');
@@ -150,7 +158,7 @@ export class UsersService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    await this.findUserWithPassword(id);
 
     await this.prisma.user.delete({
       where: { id },
@@ -160,7 +168,7 @@ export class UsersService {
   }
 
   async getStudentDocuments(studentId: string) {
-    await this.findOne(studentId);
+    await this.findUserWithPassword(studentId);
 
     return this.prisma.document.findMany({
       where: { studentId },
