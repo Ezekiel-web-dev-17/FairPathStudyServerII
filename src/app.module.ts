@@ -76,10 +76,10 @@ import { UsersModule } from './users/users.module.js';
   controllers: [AppController],
   providers: [
     AppService,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ArcjetGuard,
-    // },
+    {
+      provide: APP_GUARD,
+      useClass: ArcjetGuard,
+    },
   ],
 })
 export class AppModule {}

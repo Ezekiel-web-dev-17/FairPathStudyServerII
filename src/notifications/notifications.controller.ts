@@ -9,6 +9,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { WithArcjetRules, fixedWindow } from '@arcjet/nest';
 import { NotificationsService } from './notifications.service.js';
 import {
   TriggerMissingFieldsNotificationSchema,
@@ -20,6 +21,7 @@ import {
   UpdateNotificationStatusDto,
   AdminSendUserEmailDto,
 } from './notifications.dto.js';
+import { getArcjetMode } from '../config/arcjet.config.js';
 
 @ApiTags('Notifications & Email Queue')
 @Controller('notifications')
@@ -27,6 +29,13 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('trigger-missing-fields')
+  @WithArcjetRules([
+    fixedWindow({
+      mode: getArcjetMode(),
+      window: '1m',
+      max: 10,
+    }),
+  ])
   @ApiOperation({
     summary: 'Trigger missing fields email to student and notify admin',
     description:
@@ -35,6 +44,7 @@ export class NotificationsController {
   @ApiResponse({ status: 201, description: 'Notification created and email job enqueued successfully.' })
   @ApiResponse({ status: 400, description: 'Validation failed.' })
   @ApiResponse({ status: 404, description: 'Student not found.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded.' })
   async triggerMissingFields(@Body() body: TriggerMissingFieldsNotificationDto) {
     const parseResult = TriggerMissingFieldsNotificationSchema.safeParse(body);
     if (!parseResult.success) {
@@ -47,6 +57,13 @@ export class NotificationsController {
   }
 
   @Post('admin/send-email-to-user')
+  @WithArcjetRules([
+    fixedWindow({
+      mode: getArcjetMode(),
+      window: '1m',
+      max: 10,
+    }),
+  ])
   @ApiOperation({
     summary: 'Send customized email from admin to student regarding required documents/fields',
     description:
@@ -55,6 +72,7 @@ export class NotificationsController {
   @ApiResponse({ status: 201, description: 'Admin email enqueued and notification logged successfully.' })
   @ApiResponse({ status: 400, description: 'Validation failed.' })
   @ApiResponse({ status: 404, description: 'Student not found.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded.' })
   async adminSendEmailToUser(@Body() body: AdminSendUserEmailDto) {
     const parseResult = AdminSendUserEmailSchema.safeParse(body);
     if (!parseResult.success) {
@@ -116,4 +134,3 @@ export class NotificationsController {
     return this.notificationsService.handleResendWebhookEvent(payload);
   }
 }
-

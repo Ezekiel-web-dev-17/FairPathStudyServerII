@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Body, Param, ParseIntPipe, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { WithArcjetRules, slidingWindow } from '@arcjet/nest';
 import { ScraperService } from './scraper.service.js';
 import {
   ScrapeUrlSchema,
@@ -11,6 +12,7 @@ import {
   AutofillApplicationDto,
   SaveApplicationDto,
 } from './scraper.dto.js';
+import { getArcjetMode } from '../config/arcjet.config.js';
 
 @ApiTags('Scraper & Autofill')
 @Controller('scraper')
@@ -18,9 +20,17 @@ export class ScraperController {
   constructor(private readonly scraperService: ScraperService) {}
 
   @Post('scrape')
+  @WithArcjetRules([
+    slidingWindow({
+      mode: getArcjetMode(),
+      interval: '1m',
+      max: 10,
+    }),
+  ])
   @ApiOperation({ summary: 'Scrape an application portal URL to extract required fields' })
   @ApiResponse({ status: 200, description: 'Application page scraped successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid URL or SSRF protection triggered.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded.' })
   async scrapeUrl(@Body() body: ScrapeUrlDto) {
     const parseResult = ScrapeUrlSchema.safeParse(body);
     if (!parseResult.success) {
@@ -47,8 +57,16 @@ export class ScraperController {
   }
 
   @Post('autofill')
+  @WithArcjetRules([
+    slidingWindow({
+      mode: getArcjetMode(),
+      interval: '1m',
+      max: 10,
+    }),
+  ])
   @ApiOperation({ summary: 'Autofill application fields for a student using profile and OCR data' })
   @ApiResponse({ status: 200, description: 'Application fields autofilled successfully.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded.' })
   async autofillApplication(@Body() body: AutofillApplicationDto) {
     const parseResult = AutofillApplicationSchema.safeParse(body);
     if (!parseResult.success) {

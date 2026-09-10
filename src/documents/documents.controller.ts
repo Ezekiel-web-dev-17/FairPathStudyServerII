@@ -14,8 +14,10 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { WithArcjetRules, slidingWindow } from '@arcjet/nest';
 import { DocumentsService } from './documents.service.js';
 import { DocumentType } from '@prisma/client';
+import { getArcjetMode } from '../config/arcjet.config.js';
 
 import type { Response } from 'express';
 
@@ -25,6 +27,13 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Post('upload')
+  @WithArcjetRules([
+    slidingWindow({
+      mode: getArcjetMode(),
+      interval: '1m',
+      max: 10,
+    }),
+  ])
   @ApiOperation({ summary: 'Upload a student document (transcript, passport, test score) for OCR & LLM processing' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -43,6 +52,7 @@ export class DocumentsController {
     },
   })
   @ApiResponse({ status: 201, description: 'File uploaded and queued for processing.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded.' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @UploadedFile() file: Express.Multer.File,

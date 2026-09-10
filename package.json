@@ -93,6 +93,9 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^(\\.\\.?/.*)\\.js$": "$1"
-    }
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(arcjet|@arcjet))"
+    ]
   }
 }

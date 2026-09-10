@@ -10,8 +10,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { WithArcjetRules, fixedWindow } from '@arcjet/nest';
 import { UsersService } from './users.service.js';
 import type { CreateUserDto, UpdateUserDto, ChangePasswordDto } from './users.dto.js';
+import { getArcjetMode } from '../config/arcjet.config.js';
 
 @ApiTags('Users')
 @Controller('users')
@@ -19,6 +21,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('register')
+  @WithArcjetRules([
+    fixedWindow({
+      mode: getArcjetMode(),
+      window: '15m',
+      max: 5,
+    }),
+  ])
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({
     schema: {
@@ -34,6 +43,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 201, description: 'User successfully created.' })
   @ApiResponse({ status: 400, description: 'Validation error or email already in use.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded.' })
   async register(@Body() data: CreateUserDto) {
     return this.usersService.register(data);
   }
@@ -73,6 +83,13 @@ export class UsersController {
   }
 
   @Patch(':id/password')
+  @WithArcjetRules([
+    fixedWindow({
+      mode: getArcjetMode(),
+      window: '15m',
+      max: 5,
+    }),
+  ])
   @ApiOperation({ summary: 'Change user password' })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiBody({
@@ -89,6 +106,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Password updated successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid current password or validation error.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded.' })
   async changePassword(@Param('id') id: string, @Body() data: ChangePasswordDto) {
     return this.usersService.changePassword(id, data);
   }
