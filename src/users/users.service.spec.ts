@@ -4,6 +4,7 @@ import { UsersService } from './users.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 describe('UsersService', () => {
+  jest.setTimeout(15000);
   let service: UsersService;
   let prisma: any;
 

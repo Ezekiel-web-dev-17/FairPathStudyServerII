@@ -34,14 +34,36 @@ import { UsersModule } from './users/users.module.js';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        connection: {
-          host: configService.get<string>('REDIS_HOST', 'localhost'),
-          port: configService.get<number>('REDIS_PORT', 6379),
-          password:
-            configService.get<string>('REDIS_PASSWORD', '') || undefined,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        if (redisUrl) {
+          try {
+            const parsed = new URL(redisUrl);
+            return {
+              connection: {
+                host: parsed.hostname,
+                port: parseInt(parsed.port || '6379', 10),
+                username: parsed.username || undefined,
+                password: parsed.password || undefined,
+                tls:
+                  parsed.protocol === 'rediss:'
+                    ? { rejectUnauthorized: false }
+                    : undefined,
+              },
+            };
+          } catch {
+            // If URL parsing fails, fall through to default host/port
+          }
+        }
+        return {
+          connection: {
+            host: configService.get<string>('REDIS_HOST', '127.0.0.1'),
+            port: configService.get<number>('REDIS_PORT', 6379),
+            password:
+              configService.get<string>('REDIS_PASSWORD', '') || undefined,
+          },
+        };
+      },
     }),
     ArcjetModule.forRootAsync({
       isGlobal: true,

@@ -23,7 +23,7 @@ export class UsersService {
   }
 
   async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 11);
+    return bcrypt.hash(password, 10);
   }
 
   async verifyPassword(password: string, storedHash: string): Promise<boolean> {
