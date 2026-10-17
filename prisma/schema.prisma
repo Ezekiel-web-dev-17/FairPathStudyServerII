@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,14 +9,35 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id            String          @id @default(uuid())
-  email         String          @unique
-  name          String?
-  password      String?
-  documents     Document[]
-  profile       StudentProfile?
-  notifications Notification[]
+// ----------------------------------------------------
+// Enums
+// ----------------------------------------------------
+
+enum ApplicationStatus {
+  DRAFT
+  GATHERING_DOCS
+  AWAITING_USER_INPUT
+  PROCESSING_AUTO_SUBMIT
+  SUBMISSION_FAILED_ADMIN_REVIEW
+  SUBMITTED
+}
+
+enum DocumentType {
+  TRANSCRIPT
+  PASSPORT
+  TEST_SCORE
+  RESUME
+  STATEMENT_OF_PURPOSE
+  RECOMMENDATION_LETTER
+  FINANCIAL_STATEMENT
+  OTHER
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum NotificationType {
@@ -37,49 +56,98 @@ enum NotificationStatus {
   RESOLVED
 }
 
-enum DocumentType {
-  TRANSCRIPT
-  PASSPORT
-  TEST_SCORE
-  OTHER
+// ----------------------------------------------------
+// Core Domain Models
+// ----------------------------------------------------
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String?
+  password      String?
+  documents     Document[]
+  applications  Application[]
+  profile       StudentProfile?
+  notifications Notification[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([email])
 }
 
-enum ProcessingStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
+model Institution {
+  id           String        @id @default(uuid())
+  name         String
+  code         String?       @unique // E.g., UCAS code, OPEID, or IPEDS code
+  country      String        // ISO-3166-1 alpha-2 or country name
+  city         String?
+  state        String?
+  websiteUrl   String?
+  portalUrl    String?       // University admissions portal endpoint
+  logoUrl      String?
+  isActive     Boolean       @default(true)
+  metadata     Json?         // Portal credentials config, scrape rules, intake deadlines
+  applications Application[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([country])
+  @@index([name])
 }
 
-model Notification {
-  id        String             @id @default(uuid())
-  recipient String
-  userId    String?
-  user      User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      NotificationType   @default(USER_EMAIL_REQUEST)
-  status    NotificationStatus @default(PENDING)
-  title     String
-  message   String             @db.Text
-  metadata  Json?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+model Application {
+  id             String            @id @default(uuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionId  String
+  institution    Institution       @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  status         ApplicationStatus @default(DRAFT)
+  programName    String?           // E.g., "MSc Computer Science"
+  term           String?           // E.g., "Fall 2026"
+  formData       Json?             // Scraped & autofilled form payload
+  submissionLogs Json?             // Audit trail of auto-submission attempts, headless runner logs, errors
+  submittedAt    DateTime?
+  documents      Document[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Multi-attribute unique constraint to prevent duplicate applications per intake term
+  @@unique([userId, institutionId, programName, term])
+  
+  // Foreign key index optimization for join queries
+  @@index([userId])
+  @@index([institutionId])
+  
+  // High-throughput query filters
+  @@index([status])
+  @@index([userId, status])
+  @@index([institutionId, status])
 }
 
 model Document {
   id            String           @id @default(uuid())
-  studentId     String
+  studentId     String           // Foreign key to User
   student       User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  applicationId String?          // Optional: link to a specific Application
+  application   Application?     @relation(fields: [applicationId], references: [id], onDelete: SetNull)
   type          DocumentType     @default(OTHER)
   fileName      String
-  fileUrl       String
+  fileUrl       String           // S3 Object Public / CloudFront URL
+  s3Key         String?          // AWS S3 bucket object key (e.g., documents/usr_123/uuid.pdf)
   mimeType      String
   fileSize      Int
   status        ProcessingStatus @default(PENDING)
   errorMessage  String?
   rawOcrText    String?          @db.Text
-  extractedData Json?
+  extractedData Json?            // Parsed JSON metadata extracted via OCR & LLM
+  metadata      Json?            // S3 ETag, versionId, content disposition metadata
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+
+  @@index([studentId])
+  @@index([applicationId])
+  @@index([status])
+  @@index([type])
 }
 
 model StudentProfile {
@@ -94,4 +162,19 @@ model StudentProfile {
   updatedAt       DateTime @updatedAt
 }
 
+model Notification {
+  id        String             @id @default(uuid())
+  recipient String
+  userId    String?
+  user      User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType   @default(USER_EMAIL_REQUEST)
+  status    NotificationStatus @default(PENDING)
+  title     String
+  message   String             @db.Text
+  metadata  Json?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
+  @@index([userId])
+  @@index([status])
+}

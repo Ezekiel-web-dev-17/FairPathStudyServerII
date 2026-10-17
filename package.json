@@ -28,6 +28,7 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/event-emitter": "^12.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.6",
     "@prisma/adapter-pg": "^7.9.1",
@@ -42,6 +43,7 @@
     "morgan": "^1.11.0",
     "pdf-parse": "^2.4.5",
     "pg": "^8.23.0",
+    "playwright": "^1.64.1",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.20.0",
     "rxjs": "^7.8.1",
@@ -95,7 +97,7 @@
       "^(\\.\\.?/.*)\\.js$": "$1"
     },
     "transformIgnorePatterns": [
-      "/node_modules/(?!(arcjet|@arcjet))"
+      "/node_modules/(?!(arcjet|@arcjet|@nestjs/event-emitter))"
     ]
   }
 }

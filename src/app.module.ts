@@ -16,14 +16,17 @@ import { DocumentsModule } from './documents/documents.module.js';
 import { OcrModule } from './ocr/ocr.module';
 import { ScraperModule } from './scraper/scraper.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { UsersModule } from './users/users.module.js';
+import { ApplicationsModule } from './applications/applications.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    EventEmitterModule.forRoot(),
     AiModule,
     PrismaModule,
     DocumentsModule,
@@ -31,6 +34,7 @@ import { UsersModule } from './users/users.module.js';
     ScraperModule,
     NotificationsModule,
     UsersModule,
+    ApplicationsModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

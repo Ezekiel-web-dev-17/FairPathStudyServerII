@@ -11,6 +11,8 @@ import {
   ParseHtmlDto,
   AutofillApplicationDto,
   SaveApplicationDto,
+  QueueInstitutionUpdateSchema,
+  QueueInstitutionUpdateDto,
 } from './scraper.dto.js';
 import { getArcjetMode } from '../config/arcjet.config.js';
 
@@ -95,4 +97,30 @@ export class ScraperController {
     }
     return this.scraperService.saveAutofilledApplication(studentId, body.applicationData);
   }
+
+  @Post('institution-update')
+  @WithArcjetRules([
+    slidingWindow({
+      mode: getArcjetMode(),
+      interval: '1m',
+      max: 10,
+    }),
+  ])
+  @ApiOperation({ summary: 'Queue a university URL for asynchronous scraping with Playwright' })
+  @ApiResponse({ status: 202, description: 'Institution update job queued successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid URL or SSRF protection triggered.' })
+  async queueInstitutionUpdate(@Body() body: QueueInstitutionUpdateDto) {
+    const parseResult = QueueInstitutionUpdateSchema.safeParse(body);
+    if (!parseResult.success) {
+      const messages = parseResult.error.issues
+        ? parseResult.error.issues.map((e) => e.message).join(', ')
+        : parseResult.error.message;
+      throw new BadRequestException(messages);
+    }
+    return this.scraperService.queueInstitutionUpdate(
+      parseResult.data.universityUrl,
+      parseResult.data.institutionId,
+    );
+  }
 }
+

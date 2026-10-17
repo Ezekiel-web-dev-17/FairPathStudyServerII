@@ -36,18 +36,18 @@ async function bootstrap() {
 
   // 5. Configure the Swagger Document Builder
   const config = new DocumentBuilder()
-    .setTitle('My Backend API')
+    .setTitle('My Fair Path Backend API')
     .setDescription('The core API documentation for my application')
     .setVersion('1.0')
     // If you are using the JWT Auth we discussed earlier, enable this:
-    // .addBearerAuth() 
+    // .addBearerAuth()
     .build();
 
   // 6. Create the document object
   const document = SwaggerModule.createDocument(app, config);
 
   // 7. Setup the Swagger UI endpoint at /api/docs
-  SwaggerModule.setup('api/docs', app, document); 
+  SwaggerModule.setup('api/docs', app, document);
   // Or, if using Zod: SwaggerModule.setup('api/docs', app, cleanupOpenApiDoc(document));
 
   // Retrieve ConfigService from Nest app container

@@ -22,18 +22,3 @@ export class AppController {
     };
   }
 }
-
-// to access variables in controllers or services:
-/*
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-
-@Injectable()
-export class AppService {
-  constructor(private configService: ConfigService) {}
-
-  getEnvMode(): string {
-    return this.configService.get<string>('ARCJET_ENV', 'development');
-  }
-}
-*/

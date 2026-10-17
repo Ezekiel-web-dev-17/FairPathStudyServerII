@@ -86,3 +86,35 @@ export interface IAutofillResult {
   fieldMatches: IAutofillFieldMatch[];
   scrapedApplication: IScrapedApplication;
 }
+
+export const QueueInstitutionUpdateSchema = z.object({
+  universityUrl: z.string().url({ message: 'Invalid university URL provided.' }),
+  institutionId: z.string().optional(),
+});
+
+export class QueueInstitutionUpdateDto {
+  universityUrl!: string;
+  institutionId?: string;
+}
+
+export interface IInstitutionUpdateJobData {
+  universityUrl: string;
+  institutionId?: string;
+}
+
+export interface INewsItem {
+  title: string;
+  link?: string;
+  date?: string;
+  snippet?: string;
+}
+
+export interface IInstitutionScrapedData {
+  universityUrl: string;
+  applicationDeadline: string | null;
+  estimatedTuition: string | null;
+  recentNews: INewsItem[];
+  scrapedAt: string;
+  pageTitle?: string;
+}
+

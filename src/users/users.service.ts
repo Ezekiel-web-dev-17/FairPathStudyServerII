@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
@@ -16,7 +21,9 @@ export class UsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private sanitizeUser<T extends Record<string, any>>(user: T): Omit<T, 'password'> {
+  private sanitizeUser<T extends Record<string, any>>(
+    user: T,
+  ): Omit<T, 'password'> {
     if (!user) return user;
     const { password: _, ...sanitized } = user;
     return sanitized;
@@ -26,7 +33,10 @@ export class UsersService {
     return bcrypt.hash(password, 10);
   }
 
-  async verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  async verifyPassword(
+    password: string,
+    storedHash: string,
+  ): Promise<boolean> {
     if (!storedHash) {
       return false;
     }
@@ -36,7 +46,9 @@ export class UsersService {
   async register(data: CreateUserDto) {
     const parseResult = createUserSchema.safeParse(data);
     if (!parseResult.success) {
-      const errorMsg = parseResult.error.issues.map((e) => e.message).join(', ');
+      const errorMsg = parseResult.error.issues
+        .map((e) => e.message)
+        .join(', ');
       throw new BadRequestException(`Validation failed: ${errorMsg}`);
     }
 
@@ -108,7 +120,9 @@ export class UsersService {
   async update(id: string, data: UpdateUserDto) {
     const parseResult = updateUserSchema.safeParse(data);
     if (!parseResult.success) {
-      const errorMsg = parseResult.error.issues.map((e) => e.message).join(', ');
+      const errorMsg = parseResult.error.issues
+        .map((e) => e.message)
+        .join(', ');
       throw new BadRequestException(`Validation failed: ${errorMsg}`);
     }
 
@@ -119,7 +133,9 @@ export class UsersService {
         where: { email: parseResult.data.email },
       });
       if (existingUser && existingUser.id !== id) {
-        throw new BadRequestException('Email address is already in use by another user.');
+        throw new BadRequestException(
+          'Email address is already in use by another user.',
+        );
       }
     }
 
@@ -134,7 +150,9 @@ export class UsersService {
   async changePassword(id: string, data: ChangePasswordDto) {
     const parseResult = changePasswordSchema.safeParse(data);
     if (!parseResult.success) {
-      const errorMsg = parseResult.error.issues.map((e) => e.message).join(', ');
+      const errorMsg = parseResult.error.issues
+        .map((e) => e.message)
+        .join(', ');
       throw new BadRequestException(`Validation failed: ${errorMsg}`);
     }
 
@@ -142,7 +160,10 @@ export class UsersService {
 
     const user = await this.findUserWithPassword(id);
 
-    if (user.password && !(await this.verifyPassword(currentPassword, user.password))) {
+    if (
+      user.password &&
+      !(await this.verifyPassword(currentPassword, user.password))
+    ) {
       throw new BadRequestException('Current password provided is incorrect.');
     }
 
@@ -187,7 +208,9 @@ export class UsersService {
     });
 
     if (!profile) {
-      throw new NotFoundException(`Profile for student ID '${studentId}' not found.`);
+      throw new NotFoundException(
+        `Profile for student ID '${studentId}' not found.`,
+      );
     }
 
     return profile;
